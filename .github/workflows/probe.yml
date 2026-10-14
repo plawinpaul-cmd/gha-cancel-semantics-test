@@ -1,0 +1,33 @@
+# Probe: how a job-level !cancelled() reads an upstream job that ended `cancelled`
+# (job timeout, no run cancel) versus a real run cancel. Throwaway; archived after.
+name: probe
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "timeout | cancel"
+        required: true
+jobs:
+  a:
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    steps:
+      - run: sleep 240
+  b_not_cancelled:
+    needs: [a]
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "b ran; a=${{ needs.a.result }}"
+  c_with_route_arm:
+    needs: [a]
+    if: ${{ !cancelled() || needs.a.result == 'cancelled' }}
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "c ran; a=${{ needs.a.result }}"
+  d_always:
+    needs: [a]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "d ran; a=${{ needs.a.result }}"
